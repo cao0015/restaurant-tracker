@@ -5,7 +5,7 @@
         <el-autocomplete
           v-model="searchQuery"
           :fetch-suggestions="queryPoi"
-          placeholder="输入餐厅名称搜索高德..."
+          placeholder="输入店名和城市名，如“海底捞 南京”"
           style="width:100%"
           value-key="name"
           :trigger-on-focus="false"
@@ -39,6 +39,11 @@
       <el-form-item label="到访日期" prop="visited_date">
         <el-date-picker v-model="form.visited_date" type="date" value-format="YYYY-MM-DD"
           placeholder="选择日期" style="width:100%" />
+      </el-form-item>
+      <el-form-item label="人均消费">
+        <el-input v-model.number="form.avg_cost" type="number" placeholder="单位：元（可选）" style="width:160px">
+          <template #prefix>¥</template>
+        </el-input>
       </el-form-item>
       <el-form-item label="备注">
         <el-input v-model="form.notes" type="textarea" :rows="3" placeholder="口感、推荐菜等（可选）" />
@@ -77,6 +82,7 @@ const defaultForm = (): RestaurantInsert => ({
   rating: 0,
   visited_date: '',
   notes: '',
+  avg_cost: null,
   poi_id: null,
 })
 

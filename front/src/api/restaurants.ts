@@ -32,3 +32,8 @@ export async function deleteRestaurant(id: number) {
   const { error } = await supabase.from('restaurants').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function updateNotes(id: number, notes: string) {
+  const { error } = await supabase.from('restaurants').update({ notes }).eq('id', id)
+  if (error) throw error
+}

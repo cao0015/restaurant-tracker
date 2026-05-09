@@ -22,6 +22,7 @@
         :key="r.id"
         :restaurant="r"
         @delete="handleDelete"
+        @notes-updated="handleNotesUpdated"
       />
     </div>
 
@@ -36,6 +37,7 @@ import { Search, Plus, Loading } from '@element-plus/icons-vue'
 import RestaurantCard from '../components/RestaurantCard.vue'
 import AddRestaurantDialog from '../components/AddRestaurantDialog.vue'
 import { fetchRestaurants, deleteRestaurant } from '../api/restaurants'
+
 import type { Restaurant } from '../types/restaurant'
 
 const list = ref<Restaurant[]>([])
@@ -85,6 +87,11 @@ async function handleDelete(id: number) {
   } catch {
     ElMessage.error('删除失败，请重试')
   }
+}
+
+function handleNotesUpdated(id: number, notes: string) {
+  const item = list.value.find(r => r.id === id)
+  if (item) item.notes = notes
 }
 
 onMounted(loadData)

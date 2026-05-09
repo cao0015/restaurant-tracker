@@ -7,6 +7,7 @@ export interface Restaurant {
   cuisine_type: string
   rating: number
   notes: string
+  avg_cost: number | null
   visited_date: string
   created_at: string
   poi_id: string | null  // 高德 POI ID，有则跳详情页，无则关键词搜索

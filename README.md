@@ -67,6 +67,8 @@ pnpm dev
 
 > **想用自己的数据库？** 在 [supabase.com](https://supabase.com) 新建项目，执行 `back/schema.sql` 建表，然后将 `front/.env.local` 中的三个变量替换为你自己的值即可。高德 Key 申请见 [高德开放平台](https://lbs.amap.com/)（Web 服务类型）。
 
+- 新建餐厅的时候，记得把城市和餐厅名一起输进去，不然有可能会返回为空。原因是，这个项目用的高德API，默认IP在北京，要是搜一家北京没有的饭店，就会返回空。
+
 ---
 
 ## 数据库说明

@@ -10,8 +10,7 @@ export interface GaodePoi {
 
 export async function searchPoi(keywords: string): Promise<GaodePoi[]> {
   if (!keywords.trim()) return []
-  // types=050000 是高德 POI 分类码，对应"餐饮服务"大类，缩小搜索范围
-  const url = `https://restapi.amap.com/v3/place/text?key=${KEY}&keywords=${encodeURIComponent(keywords)}&types=050000&output=JSON&offset=10`
+  const url = `https://restapi.amap.com/v3/place/text?key=${KEY}&keywords=${encodeURIComponent(keywords)}&output=JSON&offset=10`
   try {
     const res = await fetch(url)
     const json = await res.json()

@@ -8,6 +8,7 @@ create table if not exists restaurants (
   rating       smallint    not null check (rating between 1 and 5),
   visited_date date        not null,
   notes        text        default '',
+  avg_cost     integer     default null,
   poi_id       text        default null,
   created_at   timestamptz default now()
 );
@@ -23,6 +24,12 @@ create policy "public read"
 -- 任何人可写（匿名上传）
 create policy "public insert"
   on restaurants for insert
+  with check (true);
+
+-- 任何人可更新
+create policy "public update"
+  on restaurants for update
+  using (true)
   with check (true);
 
 -- 任何人可删除（可按需改为仅限认证用户）
