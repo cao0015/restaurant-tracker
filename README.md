@@ -59,8 +59,8 @@ restaurant-tracker/
 ```bash
 git clone <repo-url>
 cd restaurant-tracker/front
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 浏览器打开 `http://localhost:5173` 即可使用。
@@ -91,7 +91,7 @@ npm run dev
 
 ```bash
 cd front
-npm run backup
+pnpm backup
 # → 已备份 42 条记录 → backup/restaurants.json
 ```
 
@@ -103,19 +103,19 @@ npm run backup
 
 ```bash
 # 开发
-npm run dev
+pnpm dev
 
 # 生产构建
-npm run build
+pnpm build
 
 # 预览构建产物
-npm run preview
+pnpm preview
 
 # 仅类型检查
-npx vue-tsc --noEmit
+pnpm vue-tsc --noEmit
 
 # 备份数据库到本地 JSON
-npm run backup
+pnpm backup
 ```
 
 ---
