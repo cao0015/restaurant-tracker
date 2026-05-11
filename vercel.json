@@ -1,0 +1,5 @@
+{
+  "installCommand": "pnpm --dir front install",
+  "buildCommand": "pnpm --dir front build",
+  "outputDirectory": "front/dist"
+}
