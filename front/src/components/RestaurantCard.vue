@@ -136,6 +136,7 @@ function openMap() {
   font-size: 13px;
   color: #777;
   font-style: italic;
+  white-space: pre-wrap;
 }
 .card-footer {
   display: flex;
