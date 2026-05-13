@@ -1,5 +1,5 @@
 {
-  "installCommand": "pnpm --dir front install",
-  "buildCommand": "pnpm --dir front build",
+  "installCommand": "npx --yes pnpm@10.15.1 --dir front install --frozen-lockfile",
+  "buildCommand": "npx --yes pnpm@10.15.1 --dir front build",
   "outputDirectory": "front/dist"
 }
