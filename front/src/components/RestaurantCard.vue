@@ -111,8 +111,9 @@ function openMap() {
 .card-body {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   margin-bottom: 6px;
+  flex-wrap: wrap;
 }
 .city {
   color: #666;

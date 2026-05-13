@@ -27,14 +27,26 @@ import { RouterView } from 'vue-router'
   font-size: 20px;
   font-weight: 700;
   color: #303133;
+  white-space: nowrap;
 }
 .subtitle {
   font-size: 13px;
   color: #aaa;
+}
+@media (max-width: 640px) {
+  .subtitle {
+    display: none;
+  }
 }
 </style>
 
 <style>
 * { box-sizing: border-box; }
 body { margin: 0; background: #f5f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+@media (max-width: 640px) {
+  .el-dialog {
+    width: 92vw !important;
+    margin: 0 auto;
+  }
+}
 </style>

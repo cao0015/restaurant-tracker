@@ -1,10 +1,10 @@
 <template>
   <div class="home">
     <div class="toolbar">
-      <el-input v-model="search" placeholder="搜索餐厅名称、城市、菜系..." clearable style="width:300px">
+      <el-input v-model="search" placeholder="搜索餐厅名称、城市、菜系..." clearable class="search-input">
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
-      <el-select v-model="filterCuisine" placeholder="筛选菜系" clearable style="width:140px">
+      <el-select v-model="filterCuisine" placeholder="筛选菜系" clearable class="cuisine-select">
         <el-option v-for="c in cuisineOptions" :key="c" :label="c" :value="c" />
       </el-select>
       <el-button type="primary" :icon="Plus" @click="showAdd = true">添加餐厅</el-button>
@@ -110,6 +110,12 @@ onMounted(loadData)
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
+.search-input {
+  width: 300px;
+}
+.cuisine-select {
+  width: 140px;
+}
 .stats {
   color: #888;
   font-size: 13px;
@@ -123,5 +129,18 @@ onMounted(loadData)
   text-align: center;
   padding: 60px 0;
   color: #aaa;
+}
+@media (max-width: 640px) {
+  .home {
+    padding: 16px 12px;
+  }
+  .search-input {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+  .cuisine-select {
+    flex: 1;
+    width: auto;
+  }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="添加餐厅" width="480px" @closed="resetForm">
+  <el-dialog v-model="visible" title="添加餐厅" width="min(480px, 92vw)" @closed="resetForm">
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
       <el-form-item label="搜索">
         <el-autocomplete
