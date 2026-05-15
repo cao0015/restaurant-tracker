@@ -26,6 +26,17 @@
       />
     </div>
 
+    <footer class="source-footer">
+      开源地址：
+      <a
+        href="https://github.com/cao0015/restaurant-tracker"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        cao0015/restaurant-tracker
+      </a>
+    </footer>
+
     <AddRestaurantDialog v-model="showAdd" @added="loadData" />
   </div>
 </template>
@@ -129,6 +140,20 @@ onMounted(loadData)
   text-align: center;
   padding: 60px 0;
   color: #aaa;
+}
+.source-footer {
+  margin-top: 24px;
+  padding: 16px 0 4px;
+  text-align: center;
+  color: #909399;
+  font-size: 13px;
+}
+.source-footer a {
+  color: #409eff;
+  text-decoration: none;
+}
+.source-footer a:hover {
+  text-decoration: underline;
 }
 @media (max-width: 640px) {
   .home {
