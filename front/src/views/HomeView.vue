@@ -22,7 +22,8 @@
         :key="r.id"
         :restaurant="r"
         @delete="handleDelete"
-        @notes-updated="handleNotesUpdated"
+        @message-added="handleMessageAdded"
+        @message-deleted="handleMessageDeleted"
       />
     </div>
 
@@ -49,7 +50,7 @@ import RestaurantCard from '../components/RestaurantCard.vue'
 import AddRestaurantDialog from '../components/AddRestaurantDialog.vue'
 import { fetchRestaurants, deleteRestaurant } from '../api/restaurants'
 
-import type { Restaurant } from '../types/restaurant'
+import type { Restaurant, RestaurantMessage } from '../types/restaurant'
 
 const list = ref<Restaurant[]>([])
 const loading = ref(false)
@@ -100,9 +101,16 @@ async function handleDelete(id: number) {
   }
 }
 
-function handleNotesUpdated(id: number, notes: string) {
-  const item = list.value.find(r => r.id === id)
-  if (item) item.notes = notes
+function handleMessageAdded(restaurantId: number, message: RestaurantMessage) {
+  const item = list.value.find(r => r.id === restaurantId)
+  if (!item) return
+  item.messages = [message, ...item.messages]
+}
+
+function handleMessageDeleted(restaurantId: number, messageId: number) {
+  const item = list.value.find(r => r.id === restaurantId)
+  if (!item) return
+  item.messages = item.messages.filter(message => message.id !== messageId)
 }
 
 onMounted(loadData)

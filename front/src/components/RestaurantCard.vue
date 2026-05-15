@@ -4,85 +4,140 @@
       <span class="name" @click="openMap">{{ restaurant.name }}</span>
       <el-rate :model-value="restaurant.rating" disabled />
     </div>
+
     <div class="card-body">
       <el-tag size="small" type="info">{{ restaurant.cuisine_type }}</el-tag>
       <span class="city">{{ restaurant.city }}</span>
       <span v-if="restaurant.avg_cost" class="avg-cost">¥{{ restaurant.avg_cost }}/人</span>
       <span class="date">{{ restaurant.visited_date }}</span>
     </div>
+
     <div v-if="restaurant.address" class="address">{{ restaurant.address }}</div>
-    <template v-if="editing">
-      <el-input
-        v-model="draftNotes"
-        type="textarea"
-        :rows="3"
-        placeholder="口感、推荐菜等..."
-        style="margin-top:8px"
-        autofocus
-      />
-      <div class="edit-actions">
-        <el-button size="small" :loading="saving" type="primary" @click="saveNotes">保存</el-button>
-        <el-button size="small" @click="cancelEdit">取消</el-button>
-      </div>
-    </template>
-    <div v-else-if="restaurant.notes" class="notes">{{ restaurant.notes }}</div>
+    <div v-if="restaurant.notes" class="legacy-notes">原备注：{{ restaurant.notes }}</div>
+
     <div class="card-footer">
-      <el-button size="small" text @click="startEdit">{{ restaurant.notes ? '编辑备注' : '添加备注' }}</el-button>
+      <el-button size="small" text @click="messageDialogVisible = true">
+        留言板（{{ restaurant.messages.length }}）
+      </el-button>
       <el-button type="danger" size="small" text @click="$emit('delete', restaurant.id)">删除</el-button>
     </div>
   </el-card>
+
+  <el-dialog
+    v-model="messageDialogVisible"
+    title="留言板"
+    width="min(620px, 92vw)"
+  >
+    <div v-if="restaurant.messages.length === 0" class="message-empty">暂无留言</div>
+    <div v-else class="message-list">
+      <article v-for="message in restaurant.messages" :key="message.id" class="message-item">
+        <div class="message-meta">
+          <span class="message-author">{{ message.author }}</span>
+          <span class="message-time">{{ formatMessageTime(message.created_at) }}</span>
+          <el-button
+            text
+            type="danger"
+            size="small"
+            :loading="deletingMessageId === message.id"
+            @click="removeMessage(message.id)"
+          >
+            删除
+          </el-button>
+        </div>
+        <div class="message-content">{{ message.content }}</div>
+      </article>
+    </div>
+
+    <div class="message-form">
+      <el-input v-model="draftAuthor" placeholder="留言人" maxlength="32" />
+      <el-input
+        v-model="draftContent"
+        type="textarea"
+        :rows="3"
+        maxlength="300"
+        show-word-limit
+        placeholder="输入留言内容"
+      />
+      <div class="message-actions">
+        <el-button type="primary" :loading="posting" @click="submitMessage">发布留言</el-button>
+      </div>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import type { Restaurant } from '../types/restaurant'
-import { updateNotes } from '../api/restaurants'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { Restaurant, RestaurantMessage } from '../types/restaurant'
+import { addRestaurantMessage, deleteRestaurantMessage } from '../api/restaurants'
 
-/**
- * 从父组件接收餐厅数据，展示基本信息和备注，支持编辑备注和删除餐厅
- */
 const props = defineProps<{ restaurant: Restaurant }>()
-const emit = defineEmits<{ delete: [id: number]; notesUpdated: [id: number, notes: string] }>()
+const emit = defineEmits<{
+  delete: [id: number]
+  messageAdded: [restaurantId: number, message: RestaurantMessage]
+  messageDeleted: [restaurantId: number, messageId: number]
+}>()
 
-const editing = ref(false)
-const draftNotes = ref('')
-const saving = ref(false)
+const messageDialogVisible = ref(false)
+const draftAuthor = ref('')
+const draftContent = ref('')
+const posting = ref(false)
+const deletingMessageId = ref<number | null>(null)
 
-/**
- * 更新备注
- */
-function startEdit() {
-  draftNotes.value = props.restaurant.notes ?? ''
-  editing.value = true
+function formatMessageTime(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('zh-CN', { hour12: false })
 }
 
-function cancelEdit() {
-  editing.value = false
-}
+async function submitMessage() {
+  const author = draftAuthor.value.trim()
+  const content = draftContent.value.trim()
+  if (!author) {
+    ElMessage.warning('请输入留言人')
+    return
+  }
+  if (!content) {
+    ElMessage.warning('请输入留言内容')
+    return
+  }
 
-async function saveNotes() {
-  saving.value = true
+  posting.value = true
   try {
-    await updateNotes(props.restaurant.id, draftNotes.value)
-    emit('notesUpdated', props.restaurant.id, draftNotes.value)
-    editing.value = false
+    const message = await addRestaurantMessage(props.restaurant.id, author, content)
+    emit('messageAdded', props.restaurant.id, message)
+    draftContent.value = ''
+    ElMessage.success('留言已发布')
   } catch {
-    ElMessage.error('保存失败，请重试')
+    ElMessage.error('发布失败，请重试')
   } finally {
-    saving.value = false
+    posting.value = false
   }
 }
 
-/**
- * 点击跳转地图
- */
+async function removeMessage(messageId: number) {
+  try {
+    await ElMessageBox.confirm('确认删除这条留言？', '提示', { type: 'warning' })
+  } catch {
+    return
+  }
+
+  deletingMessageId.value = messageId
+  try {
+    await deleteRestaurantMessage(messageId)
+    emit('messageDeleted', props.restaurant.id, messageId)
+    ElMessage.success('留言已删除')
+  } catch {
+    ElMessage.error('删除失败，请重试')
+  } finally {
+    deletingMessageId.value = null
+  }
+}
+
 function openMap() {
   if (props.restaurant.poi_id) {
-    // 通过高德搜索录入的记录有 poi_id，直接跳到 POI 详情页，定位更准确
     window.open(`https://www.amap.com/detail/${props.restaurant.poi_id}`, '_blank')
   } else {
-    // 手动录入的记录没有 poi_id，退回到关键词搜索
     const keyword = encodeURIComponent(`${props.restaurant.city} ${props.restaurant.name}`)
     window.open(`https://www.amap.com/search?query=${keyword}`, '_blank')
   }
@@ -93,21 +148,25 @@ function openMap() {
 .restaurant-card {
   margin-bottom: 12px;
 }
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
 }
+
 .name {
   font-size: 16px;
   font-weight: 600;
   color: #409eff;
   cursor: pointer;
 }
+
 .name:hover {
   text-decoration: underline;
 }
+
 .card-body {
   display: flex;
   align-items: center;
@@ -115,39 +174,102 @@ function openMap() {
   margin-bottom: 6px;
   flex-wrap: wrap;
 }
+
 .city {
   color: #666;
   font-size: 13px;
 }
+
 .avg-cost {
   color: #e6a23c;
   font-size: 13px;
 }
+
 .date {
   color: #999;
   font-size: 12px;
   margin-left: auto;
 }
+
 .address {
   font-size: 13px;
   color: #555;
-  margin-bottom: 4px;
+  margin-bottom: 10px;
 }
-.notes {
+
+.legacy-notes {
   font-size: 13px;
   color: #777;
-  font-style: italic;
   white-space: pre-wrap;
+  margin-bottom: 10px;
 }
+
 .card-footer {
   display: flex;
   justify-content: flex-end;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 10px;
 }
-.edit-actions {
+
+.message-empty {
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 12px;
+}
+
+.message-list {
+  max-height: 320px;
+  overflow-y: auto;
   display: flex;
+  flex-direction: column;
   gap: 8px;
+  margin-bottom: 12px;
+  padding-right: 2px;
+}
+
+.message-item {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.message-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.message-author {
+  font-size: 13px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.message-meta :deep(.el-button) {
+  margin-left: auto;
+}
+
+.message-content {
+  font-size: 13px;
+  color: #555;
+  white-space: pre-wrap;
+}
+
+.message-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message-actions {
+  display: flex;
   justify-content: flex-end;
-  margin-top: 6px;
 }
 </style>

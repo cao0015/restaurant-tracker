@@ -1,23 +1,49 @@
 import { supabase } from '../lib/supabase'
-import type { Restaurant, RestaurantInsert } from '../types/restaurant'
+import type { Restaurant, RestaurantInsert, RestaurantMessage } from '../types/restaurant'
+
+type RestaurantRow = Omit<Restaurant, 'messages'>
 
 /**
- * 从数据库加载餐厅数据列表
- * 1、通过 Supabase JavaScript SDK 发送 HTTP 请求到 Supabase 服务，
- * 2、服务端执行 SQL 查询并返回 JSON 数据，前端解析为 JavaScript 对象数组。
- * @returns 餐厅数据列表
+ * 获取数据库中的所有餐厅信息，包括消息板条目
+ * @returns 所有餐厅的数组，每个餐厅包含其消息板条目
  */
-// 按到访日期倒序，最近吃的排在最前面
 export async function fetchRestaurants(): Promise<Restaurant[]> {
-  const { data, error } = await supabase
+  const { data: restaurantsData, error: restaurantsError } = await supabase
     .from('restaurants')
     .select('*')
     .order('visited_date', { ascending: false })
-  if (error) throw error
-  return data as Restaurant[]
+  if (restaurantsError) throw restaurantsError
+
+  const restaurants = (restaurantsData ?? []) as RestaurantRow[]
+  const restaurantIds = restaurants.map(item => item.id)
+
+  let messages: RestaurantMessage[] = []
+  if (restaurantIds.length > 0) {
+    const { data: messagesData, error: messagesError } = await supabase
+      .from('restaurant_messages')
+      .select('*')
+      .in('restaurant_id', restaurantIds)
+      .order('created_at', { ascending: false })
+    if (messagesError) throw messagesError
+    messages = (messagesData ?? []) as RestaurantMessage[]
+  }
+
+  const messagesByRestaurantId = new Map<number, RestaurantMessage[]>()
+  for (const message of messages) {
+    const existing = messagesByRestaurantId.get(message.restaurant_id)
+    if (existing) {
+      existing.push(message)
+    } else {
+      messagesByRestaurantId.set(message.restaurant_id, [message])
+    }
+  }
+
+  return restaurants.map(restaurant => ({
+    ...restaurant,
+    messages: messagesByRestaurantId.get(restaurant.id) ?? [],
+  }))
 }
 
-// .select().single() 让插入后立即拿到含 id 的完整记录
 export async function addRestaurant(restaurant: RestaurantInsert) {
   const { data, error } = await supabase
     .from('restaurants')
@@ -33,7 +59,24 @@ export async function deleteRestaurant(id: number) {
   if (error) throw error
 }
 
-export async function updateNotes(id: number, notes: string) {
-  const { error } = await supabase.from('restaurants').update({ notes }).eq('id', id)
+export async function addRestaurantMessage(restaurantId: number, author: string, content: string): Promise<RestaurantMessage> {
+  const { data, error } = await supabase
+    .from('restaurant_messages')
+    .insert({
+      restaurant_id: restaurantId,
+      author: author.trim(),
+      content: content.trim(),
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data as RestaurantMessage
+}
+
+export async function deleteRestaurantMessage(messageId: number) {
+  const { error } = await supabase
+    .from('restaurant_messages')
+    .delete()
+    .eq('id', messageId)
   if (error) throw error
 }
