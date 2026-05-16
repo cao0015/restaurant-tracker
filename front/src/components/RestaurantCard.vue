@@ -16,8 +16,8 @@
     <div v-if="restaurant.notes" class="legacy-notes">原备注：{{ restaurant.notes }}</div>
 
     <div class="card-footer">
-      <el-button size="small" text @click="messageDialogVisible = true">
-        留言板（{{ restaurant.messages.length }}）
+      <el-button size="small" text @click="openMessageDialog">
+        留言板（{{ restaurant.message_count }}）
       </el-button>
       <el-button type="danger" size="small" text @click="$emit('delete', restaurant.id)">删除</el-button>
     </div>
@@ -28,7 +28,8 @@
     title="留言板"
     width="min(620px, 92vw)"
   >
-    <div v-if="restaurant.messages.length === 0" class="message-empty">暂无留言</div>
+    <div v-if="messagesLoading" class="center"><el-icon class="is-loading" size="24"><Loading /></el-icon></div>
+    <div v-else-if="!restaurant.messages || restaurant.messages.length === 0" class="message-empty">暂无留言</div>
     <div v-else class="message-list">
       <article v-for="message in restaurant.messages" :key="message.id" class="message-item">
         <div class="message-meta">
@@ -68,8 +69,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Loading } from '@element-plus/icons-vue'
 import type { Restaurant, RestaurantMessage } from '../types/restaurant'
-import { addRestaurantMessage, deleteRestaurantMessage } from '../api/restaurants'
+import { addRestaurantMessage, deleteRestaurantMessage, fetchRestaurantMessages } from '../api/restaurants'
 
 const props = defineProps<{ restaurant: Restaurant }>()
 const emit = defineEmits<{
@@ -79,6 +81,7 @@ const emit = defineEmits<{
 }>()
 
 const messageDialogVisible = ref(false)
+const messagesLoading = ref(false)
 const draftAuthor = ref('')
 const draftContent = ref('')
 const posting = ref(false)
@@ -131,6 +134,22 @@ async function removeMessage(messageId: number) {
     ElMessage.error('删除失败，请重试')
   } finally {
     deletingMessageId.value = null
+  }
+}
+
+async function openMessageDialog() {
+  messageDialogVisible.value = true
+  // 如果还没有加载留言，则懒加载
+  if (!props.restaurant.messages) {
+    messagesLoading.value = true
+    try {
+      const messages = await fetchRestaurantMessages(props.restaurant.id)
+      props.restaurant.messages = messages
+    } catch {
+      ElMessage.error('加载留言失败')
+    } finally {
+      messagesLoading.value = false
+    }
   }
 }
 
@@ -209,6 +228,12 @@ function openMap() {
   justify-content: flex-end;
   gap: 4px;
   margin-top: 10px;
+}
+
+.center {
+  text-align: center;
+  padding: 24px 0;
+  color: #aaa;
 }
 
 .message-empty {

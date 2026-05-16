@@ -12,19 +12,32 @@
 
     <div class="stats">
       共 <strong>{{ filteredList.length }}</strong> 家餐厅
+      <span v-if="filteredList.length > pageSize" class="page-info">，第 {{ currentPage }} / {{ totalPages }} 页</span>
     </div>
 
     <div v-if="loading" class="center"><el-icon class="is-loading" size="32"><Loading /></el-icon></div>
     <div v-else-if="filteredList.length === 0" class="center"><el-empty description="暂无餐厅记录" /></div>
-    <div v-else class="list">
-      <RestaurantCard
-        v-for="r in filteredList"
-        :key="r.id"
-        :restaurant="r"
-        @delete="handleDelete"
-        @message-added="handleMessageAdded"
-        @message-deleted="handleMessageDeleted"
-      />
+    <div v-else>
+      <div class="list">
+        <RestaurantCard
+          v-for="r in paginatedList"
+          :key="r.id"
+          :restaurant="r"
+          @delete="handleDelete"
+          @message-added="handleMessageAdded"
+          @message-deleted="handleMessageDeleted"
+        />
+      </div>
+      <div v-if="filteredList.length > pageSize" class="pagination">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="filteredList.length"
+          layout="prev, pager, next"
+          background
+          hide-on-single-page
+        />
+      </div>
     </div>
 
     <footer class="source-footer">
@@ -43,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Plus, Loading } from '@element-plus/icons-vue'
 import RestaurantCard from '../components/RestaurantCard.vue'
@@ -57,6 +70,8 @@ const loading = ref(false)
 const showAdd = ref(false)
 const search = ref('')
 const filterCuisine = ref('')
+const currentPage = ref(1)
+const pageSize = 10
 
 // 从已有数据动态生成菜系选项，而非写死，新增菜系后自动出现在筛选器
 const cuisineOptions = computed(() => [...new Set(list.value.map(r => r.cuisine_type).filter(Boolean))])
@@ -70,6 +85,13 @@ const filteredList = computed(() => {
     const matchCuisine = !filterCuisine.value || r.cuisine_type === filterCuisine.value
     return matchSearch && matchCuisine
   })
+})
+
+const totalPages = computed(() => Math.ceil(filteredList.value.length / pageSize))
+
+const paginatedList = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return filteredList.value.slice(start, start + pageSize)
 })
 
 /**
@@ -104,14 +126,19 @@ async function handleDelete(id: number) {
 function handleMessageAdded(restaurantId: number, message: RestaurantMessage) {
   const item = list.value.find(r => r.id === restaurantId)
   if (!item) return
-  item.messages = [message, ...item.messages]
+  item.messages = [message, ...(item.messages ?? [])]
+  item.message_count += 1
 }
 
 function handleMessageDeleted(restaurantId: number, messageId: number) {
   const item = list.value.find(r => r.id === restaurantId)
   if (!item) return
-  item.messages = item.messages.filter(message => message.id !== messageId)
+  item.messages = (item.messages ?? []).filter(message => message.id !== messageId)
+  item.message_count = Math.max(0, item.message_count - 1)
 }
+
+// 搜索或筛选变化时重置到第一页
+watch([search, filterCuisine], () => { currentPage.value = 1 })
 
 onMounted(loadData)
 </script>
@@ -159,6 +186,14 @@ onMounted(loadData)
 .source-footer a {
   color: #409eff;
   text-decoration: none;
+}
+.page-info {
+  color: #aaa;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
 }
 .source-footer a:hover {
   text-decoration: underline;
